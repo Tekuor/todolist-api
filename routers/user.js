@@ -1,15 +1,14 @@
 const express = require("express");
 const User = require("../models/user");
 const auth = require("../middleware/auth");
-const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 const router = express.Router();
 
 router.post("/register", async (req, res) => {
   try {
-    const user = new User(req.body);
-    await user.save();
+    const user = await User.create(req.body);
     const token = await user.generateAuthToken();
     res.status(201).send({ user, token });
   } catch (error) {
@@ -29,9 +28,7 @@ router.post("/login", async (req, res) => {
       throw new Error({ error: "Invalid login credentials" });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_KEY);
-    user.tokens = user.tokens.concat({ token });
-    await user.save();
+    const token = await user.generateAuthToken();
     res.send({ user, token });
   } catch (error) {
     res.status(400).send(error);
