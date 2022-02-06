@@ -11,6 +11,10 @@ const categorySchema = mongoose.Schema({
     type: String,
     required: false,
   },
+  hex: {
+    type: String,
+    required: false,
+  },
 });
 
 const Category = mongoose.model("Category", categorySchema);
