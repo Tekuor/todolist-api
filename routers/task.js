@@ -1,14 +1,49 @@
 const express = require("express");
 const Task = require("../models/task");
 const auth = require("../middleware/auth");
+const dateFns = require("date-fns");
+const rRule = require("rrule");
 
 const router = express.Router();
 
 router.post("/tasks", auth, async (req, res) => {
   try {
     const data = Object.assign(req.body, { userId: req.user._id });
-    const task = await Task.create(data);
-    res.status(201).send({ task });
+    if (data.frequency !== "once") {
+      let frequency = "";
+      switch (data.frequency) {
+        case "daily":
+          frequency = rRule.RRule.DAILY;
+          break;
+        case "weekly":
+          frequency = rRule.RRule.WEEKLY;
+          break;
+        case "monthly":
+          frequency = rRule.RRule.MONTHLY;
+          break;
+        case "yearly":
+          frequency = rRule.RRule.YEARLY;
+          break;
+      }
+
+      const rule = new rRule.RRule({
+        freq: frequency,
+        interval: 1,
+        wkst: rRule.RRule.MO,
+        dtstart: new Date(data.dueDate),
+        until: dateFns.addMonths(new Date(data.dueDate), 2),
+      });
+
+      const dates = rule.all();
+      for (const taskDate of dates) {
+        data.dueDate = taskDate;
+        await Task.create(data);
+      }
+    } else {
+      await Task.create(data);
+    }
+
+    res.status(201).send({});
   } catch (error) {
     res.status(400).send(error);
   }
